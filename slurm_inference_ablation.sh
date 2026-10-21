@@ -18,6 +18,8 @@ MEM="64G"
 TIME="6:00:00"
 GPUS=1                  # GPUs per node; set to "" if no GPU needed
 CONDA_ENV="psn"
+ACCOUNT="${ACCOUNT:-r01682}"   # IU RT project, passed as -A
+PARTITION="${PARTITION:-}"   # optional; set to "" to use the cluster default
 WORK_DIR="$(cd "$(dirname "$0")" && pwd)"
 MODEL_SOURCE="${MODEL_SOURCE:-results_multi_seed}"
 # ──────────────────────────────────────────────────────────────────────────────
@@ -61,6 +63,16 @@ else
     SUBMIT_STAGES=("${STAGES[@]}")
 fi
 
+if [ -z "$ACCOUNT" ]; then
+    echo "Error: set ACCOUNT to your RT project (edit this script or run: ACCOUNT=<project> bash $0)"
+    exit 1
+fi
+
+PARTITION_FLAG=""
+if [ -n "$PARTITION" ]; then
+    PARTITION_FLAG="--partition=$PARTITION"
+fi
+
 GPU_FLAG=""
 if [ -n "$GPUS" ]; then
     GPU_FLAG="--gpus-per-node=$GPUS"
@@ -82,6 +94,8 @@ for stage in "${SUBMIT_STAGES[@]}"; do
         --mem="$MEM" \
         --time="$TIME" \
         $GPU_FLAG \
+        $PARTITION_FLAG \
+        --account="$ACCOUNT" \
         --output="$log_file" \
         --error="$log_file" \
         --wrap="
@@ -91,7 +105,7 @@ for stage in "${SUBMIT_STAGES[@]}"; do
             python run_inference_ablation.py \
                 --stage '$stage' \
                 --model-source-dir '$MODEL_SOURCE'
-        "
+        " || { echo "  FAILED: $job_name"; exit 1; }
 
     echo "  Submitted: $job_name  (log -> results_inference_ablation/${stage}/slurm_<jobid>.log)"
 done

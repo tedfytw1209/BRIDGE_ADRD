@@ -1,5 +1,6 @@
 #!/bin/bash
 #SBATCH -J psn_train
+#SBATCH -A r01682
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8

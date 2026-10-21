@@ -162,7 +162,9 @@ python train.py --output-dir results/my_run --random-state 42
 
 All cluster experiments are submitted via scripts in the project root. Edit the
 `CPUS`, `MEM`, `TIME`, and `GPUS` variables at the top of each script to match
-your cluster allocation before submitting.
+your cluster allocation before submitting. `ACCOUNT` (the IU RT project, passed
+as `-A`) defaults to `r01682`; `PARTITION` is optional. Both can be set inline,
+e.g. `PARTITION=gpu bash slurm_multi_seed.sh`.
 
 ### 1. Main Experiment — 5-Seed CI Results (Table 2 & 3, Figure 3)
 

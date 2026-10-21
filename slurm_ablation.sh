@@ -13,6 +13,8 @@ MEM="64G"
 TIME="24:00:00"
 GPUS=1                  # GPUs per node; set to "" if no GPU needed
 CONDA_ENV="psn"         # conda environment name (or comment out the activation)
+ACCOUNT="${ACCOUNT:-r01682}"   # IU RT project, passed as -A
+PARTITION="${PARTITION:-}"   # optional; set to "" to use the cluster default
 WORK_DIR="$(cd "$(dirname "$0")" && pwd)"   # directory containing this script
 # ──────────────────────────────────────────────────────────────────────────────
 
@@ -56,6 +58,16 @@ else
     SUBMIT_STAGES=("${STAGES[@]}")
 fi
 
+if [ -z "$ACCOUNT" ]; then
+    echo "Error: set ACCOUNT to your RT project (edit this script or run: ACCOUNT=<project> bash $0)"
+    exit 1
+fi
+
+PARTITION_FLAG=""
+if [ -n "$PARTITION" ]; then
+    PARTITION_FLAG="--partition=$PARTITION"
+fi
+
 # Build optional GPU flag
 GPU_FLAG=""
 if [ -n "$GPUS" ]; then
@@ -79,6 +91,8 @@ for stage in "${SUBMIT_STAGES[@]}"; do
         --mem="$MEM" \
         --time="$TIME" \
         $GPU_FLAG \
+        $PARTITION_FLAG \
+        --account="$ACCOUNT" \
         --output="$log_file" \
         --error="$log_file" \
         --wrap="
@@ -86,7 +100,7 @@ for stage in "${SUBMIT_STAGES[@]}"; do
             conda activate $CONDA_ENV
             cd '$WORK_DIR'
             python run_ablation_multi_seed.py --stage '$stage'
-        "
+        " || { echo "  FAILED: $job_name"; exit 1; }
 
     echo "  Submitted: $job_name  (log -> results_ablation/${stage}/slurm_<jobid>.log)"
 done
