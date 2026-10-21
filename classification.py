@@ -167,7 +167,7 @@ def main():
     print("=" * 80)
 
     imputations_dir = imp_dir
-    imputation_methods = ["model", "mean", "median", "knn1", "knn3", "knn", "linearregression", "gain", "grape"]
+    imputation_methods = ["model", "mean", "median", "knn1", "knn3", "knn", "linearregression", "mice", "missforest", "ppm", "gain", "grape"]
     missing_files = []
     for method in imputation_methods:
         for split in ["train", "test"]:
@@ -189,6 +189,9 @@ def main():
         "knn3": "KNN3",
         "knn": "KNN",
         "linearregression": "LinearRegression",
+        "mice": "MICE",
+        "missforest": "MissForest",
+        "ppm": "PPM",
         "gain": "GAIN",
         "grape": "GRAPE",
     }

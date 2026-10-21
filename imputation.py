@@ -3,8 +3,10 @@ import argparse
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
-from sklearn.impute import SimpleImputer, KNNImputer
-from sklearn.linear_model import LinearRegression
+from sklearn.experimental import enable_iterative_imputer  # noqa: F401 (exposes IterativeImputer)
+from sklearn.impute import SimpleImputer, KNNImputer, IterativeImputer
+from sklearn.linear_model import LinearRegression, BayesianRidge
+from sklearn.ensemble import RandomForestRegressor
 
 from data_loader import get_or_create_split, PatientDataset, get_or_create_eval_mask, load_global_scalers
 from graph_builder import MultiModalGraphConstructor
@@ -276,7 +278,52 @@ def model_impute_single(train_modality_data, test_modality_data, test_patient_id
     return results
 
 
-def baselines_impute(train_data, test_data=None, R_eval=None, n_neighbors=5, seed=42):
+def mice_impute(X_train, X_target, n_imputations=5, max_iter=10, seed=42, extra_train=None, extra_target=None):
+    """MICE (van Buuren 2011; Zhang 2016) via sklearn IterativeImputer.
+    Draws n_imputations datasets with BayesianRidge + posterior sampling and pools them
+    by averaging (Rubin's rule for the point estimate). extra_* are fully observed
+    covariates appended as predictors only (used by PPM); they are not returned."""
+    n_features = X_train.shape[1]
+    if extra_train is not None:
+        X_train = np.hstack([X_train, extra_train])
+        X_target = np.hstack([X_target, extra_target])
+    draws = []
+    for k in range(n_imputations):
+        imp = IterativeImputer(estimator=BayesianRidge(), sample_posterior=True, max_iter=max_iter,
+                               initial_strategy="mean", imputation_order="ascending",
+                               keep_empty_features=True, random_state=seed + k)
+        imp.fit(X_train)
+        draws.append(imp.transform(X_target)[:, :n_features])
+    return np.mean(draws, axis=0)
+
+
+def missforest_impute(X_train, X_target, n_estimators=100, max_iter=10, seed=42):
+    """MissForest (Stekhoven & Buhlmann 2012) via sklearn IterativeImputer with a random forest:
+    mean initial guess, columns visited in ascending missingness, mtry = sqrt(p)."""
+    rf = RandomForestRegressor(n_estimators=n_estimators, max_features="sqrt", n_jobs=-1, random_state=seed)
+    imp = IterativeImputer(estimator=rf, max_iter=max_iter, initial_strategy="mean",
+                           imputation_order="ascending", keep_empty_features=True, random_state=seed)
+    imp.fit(X_train)
+    return imp.transform(X_target)
+
+
+def ppm_impute(X_train, X_target, delta=0.0, n_imputations=5, max_iter=10, seed=42):
+    """Pattern-mixture model (Little 1993) via MICE conditioned on missingness pattern.
+    Each feature's imputation model includes the missingness indicators of all features,
+    so the imputation distribution differs across patterns. A feature's own-missingness
+    effect is not identifiable from data, so it is set by the sensitivity parameter delta
+    (shift in training-SD units, delta-adjusted PPM; Ratitch et al. 2013). delta=0 -> MAR."""
+    M_train = np.isnan(X_train).astype(float)
+    M_target = np.isnan(X_target).astype(float)
+    X_imp = mice_impute(X_train, X_target, n_imputations=n_imputations, max_iter=max_iter, seed=seed,
+                        extra_train=M_train, extra_target=M_target)
+    if delta != 0.0:
+        sd = np.nan_to_num(np.nanstd(X_train, axis=0))
+        X_imp = np.where(M_target.astype(bool), X_imp + delta * sd, X_imp)
+    return X_imp
+
+
+def baselines_impute(train_data, test_data=None, R_eval=None, n_neighbors=5, seed=42, ppm_delta=0.0):
 
     X_train = np.copy(train_data)
     is_evaluation_mode = (test_data is not None) and (R_eval is not None)
@@ -335,6 +382,15 @@ def baselines_impute(train_data, test_data=None, R_eval=None, n_neighbors=5, see
         X_lr[mask_missing, j] = lr.predict(X_target_other)
 
     results["LinearRegression"] = X_lr
+
+    set_deterministic_seed(seed)
+    results["MICE"] = mice_impute(X_train, X_target, seed=seed)
+
+    set_deterministic_seed(seed)
+    results["MissForest"] = missforest_impute(X_train, X_target, seed=seed)
+
+    set_deterministic_seed(seed)
+    results["PPM"] = ppm_impute(X_train, X_target, delta=ppm_delta, seed=seed)
 
     return results
 
@@ -448,7 +504,7 @@ def main():
     categorical_modalities = set(config.config['categorical_modalities'])
 
     for mod_key in modalities_to_impute:
-        train_baselines_std = baselines_impute(train_modality_data[mod_key], n_neighbors=5, seed=seed)
+        train_baselines_std = baselines_impute(train_modality_data[mod_key], n_neighbors=5, seed=seed, ppm_delta=config.config.get("ppm_delta", 0.0))
 
         for method, imputed_std in train_baselines_std.items():
             imputed = inverse_transform_modality(scalers, imputed_std, mod_key)
@@ -548,7 +604,7 @@ def main():
     baseline_results = {}
 
     for mod_key in modalities_to_impute:
-        baseline_results[mod_key] = baselines_impute(train_modality_data[mod_key], test_modality_data[mod_key], R_eval_dict[mod_key], n_neighbors=5, seed=seed)
+        baseline_results[mod_key] = baselines_impute(train_modality_data[mod_key], test_modality_data[mod_key], R_eval_dict[mod_key], n_neighbors=5, seed=seed, ppm_delta=config.config.get("ppm_delta", 0.0))
 
     # GAIN test imputation: mask R_eval positions, then impute using the already-trained model.
     print("[GAIN] Imputing test set")

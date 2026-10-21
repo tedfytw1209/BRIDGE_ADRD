@@ -40,7 +40,9 @@ pip install -r requirements.txt
 ├── decoders.py            # Feature reconstruction decoders
 ├── data_augmentation.py   # Augmentation and loss functions
 ├── train.py               # Training pipeline (10-fold CV)
-├── imputation.py          # Embedding extraction and imputation evaluation
+├── imputation.py          # Embedding extraction, baseline imputers, imputation evaluation
+├── gain_imputer.py        # GAIN baseline
+├── grape_imputer.py       # GRAPE baseline
 ├── classification.py      # Classification evaluation
 └── hyperparam_tuning.py   # Hyperparameter search
 ```
@@ -62,6 +64,7 @@ Preprocessing/
 
 dataset_description.ipynb          # Table 1 cohort summary + missingness analysis
 aggregate_results_v3.ipynb         # Aggregates ablation multi-seed runs → CI tables
+                                   #   + baseline-vs-model comparison tables
 result_analysis/
 └── imputation_result_process.ipynb  # Neighbor / same-label-ratio analysis
 ```
@@ -76,6 +79,35 @@ result_analysis/
 - M5: Cognitive Scores (9 features)
 - M6: Genetic/APOE (1 feature)
 - M7: Protein Biomarkers (8 features)
+
+## Imputation Baselines
+
+`imputation.py` compares the model against the baselines below on the imputed
+modalities (M3, M5, M6, M7). Every baseline is fit on the training split and
+fills only missing entries. Each one is used twice: for imputation evaluation
+(test positions hidden by `R_eval`) and for downstream classification. Outputs are
+saved as `imputations/{train,test}_{method}_{modality}.npy`.
+
+| Method (CSV name) | Implementation | Reference |
+|---|---|---|
+| `Mean`, `Median` | `sklearn.impute.SimpleImputer` | — |
+| `KNN1`, `KNN3`, `KNN` (k=5) | `sklearn.impute.KNNImputer` | — |
+| `LinearRegression` | One linear regression per feature on mean-filled other features (single pass, not iterative) | — |
+| `MICE` | `sklearn.impute.IterativeImputer` with `BayesianRidge` + posterior sampling, 10 iterations, m=5 imputations averaged (Rubin's-rule point estimate) | van Buuren & Groothuis-Oudshoorn 2011; Zhang 2016 |
+| `MissForest` | `sklearn.impute.IterativeImputer` with `RandomForestRegressor` (100 trees, `max_features="sqrt"`), mean initial guess, columns in ascending order of missingness | Stekhoven & Bühlmann 2012 |
+| `PPM` | Pattern-mixture model: MICE whose imputation models also take every feature's missingness indicator, plus a delta adjustment for the feature's own missingness (MNAR sensitivity) | Little 1993; Ratitch et al. 2013; Yan et al. 2025 |
+| `GAIN` | `gain_imputer.py` (continuous modalities; M6 uses the Mean proxy) | Yoon et al. 2018 |
+| `GRAPE` | `grape_imputer.py` (continuous modalities; M6 uses the Mean proxy) | You et al. 2020 |
+
+PPM's sensitivity parameter is `ppm_delta` in `config.py`. It shifts imputed
+values by `ppm_delta × training SD` of each feature. The default `0.0` is equivalent
+to MAR. Because the evaluation masks are MCAR, use non-zero values (e.g. ±0.25, ±0.5)
+for a tipping-point / MNAR sensitivity analysis.
+
+> **Adding baselines to finished runs:** the new baselines are listed as done
+> markers in `run_multi_seed.py`, so seeds completed before they were added will
+> rerun. To skip retraining, rerun only the downstream steps:
+> `bash run_multi_seed.sh --steps imputation error_analysis classification eval_demographics`
 
 
 ## Usage
@@ -253,7 +285,7 @@ directories.
 | Notebook | Reads | Produces |
 |---|---|---|
 | `dataset_description.ipynb` | `Features/m{1..7}_features*.csv`, `Features/observation_periods.csv` | Table 1 cohort summary, per-feature/per-modality missingness tables and heatmaps |
-| `aggregate_results_v3.ipynb` | `results_ablation/{stage}_sd{seed}/output/` | Per-stage CI tables (`results_ablation_agg/`) + ablation summary CSVs |
+| `aggregate_results_v3.ipynb` | `results_ablation/{stage}/seed_{seed}/output/` (or `results_multi_seed/seed_{seed}/` with `STAGES = [""]`) | Per-stage CI tables (`results_ablation_agg/`), ablation summary CSVs, and baseline comparison tables: `baseline_imputation_mae_comparison.csv`, `baseline_imputation_categorical_comparison.csv`, `baseline_classification_auroc_comparison.csv` |
 | `result_analysis/imputation_result_process.ipynb` | neighbor dump (`top25_neighbors_*.txt`) + modality CSVs | Same-label-ratio and neighbor-missingness analysis |
 
 ```bash
@@ -272,6 +304,7 @@ jupyter lab        # open the notebook, Run All
 | `alpha2` | Backward loss weight | 0.4 |
 | `lambda_imp` | Imputation loss weight | 2.0 |
 | `prob_edge` | Edge dropout probability | 0.4 |
+| `ppm_delta` | PPM baseline delta shift (× feature SD); 0 = MAR | 0.0 |
 
 ## Output
 

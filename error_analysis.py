@@ -20,6 +20,9 @@ METHODS = {
     'mean': {'label': 'Mean',   'color': '#00AA00', 'marker': '^'},
     'median': {'label': 'Median', 'color': '#9933CC', 'marker': 'v'},
     'linearregression': {'label': 'LinReg', 'color': '#DD0000', 'marker': 'D'},
+    'mice': {'label': 'MICE',   'color': '#8C564B', 'marker': 'X'},
+    'missforest': {'label': 'MissForest', 'color': '#556B2F', 'marker': 'h'},
+    'ppm': {'label': 'PPM',    'color': '#E377C2', 'marker': 'p'},
     'gain': {'label': 'GAIN',   'color': '#3BB273', 'marker': '*'},
     'grape': {'label': 'GRAPE',  'color': '#2EC4B6', 'marker': 'P'},
 }

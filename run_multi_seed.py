@@ -16,6 +16,7 @@ DONE_MARKERS = [
     "imputations/test_model_m3.npy", "imputations/test_model_m5.npy", "imputations/test_model_m6.npy", "imputations/test_model_m7.npy",
     "imputations/test_gain_m3.npy", "imputations/test_gain_m5.npy", "imputations/test_gain_m7.npy",
     "imputations/test_grape_m3.npy", "imputations/test_grape_m5.npy", "imputations/test_grape_m7.npy",
+    "imputations/test_mice_m3.npy", "imputations/test_missforest_m3.npy", "imputations/test_ppm_m3.npy",
     "embeddings/train_embeddings.npy", "embeddings/test_embeddings.npy",
 ]
 

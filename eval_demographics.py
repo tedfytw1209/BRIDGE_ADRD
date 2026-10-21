@@ -161,9 +161,9 @@ def main():
     modalities_to_impute = config.config["modalities_to_impute"]
     imputations_dir = imp_dir
     imputation_methods = [
-        "model", "mean", "median", "knn", "linearregression", "gain", "grape",
+        "model", "mean", "median", "knn", "linearregression", "mice", "missforest", "ppm", "gain", "grape",
     ]
-    method_name_map = {"knn": "KNN", "linearregression": "LinearRegression", "gain": "GAIN", "grape": "GRAPE",}
+    method_name_map = {"knn": "KNN", "linearregression": "LinearRegression", "mice": "MICE", "missforest": "MissForest", "ppm": "PPM", "gain": "GAIN", "grape": "GRAPE",}
 
     rows = []
 

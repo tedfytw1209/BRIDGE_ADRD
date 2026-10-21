@@ -23,6 +23,10 @@ config = {
     'eval_prob_m6': 0.3,
     'eval_prob_m7': 0.3,
 
+    # PPM (pattern-mixture) baseline: delta shift for imputed values, in units of the
+    # feature's training SD. 0.0 = MAR-equivalent; non-zero for MNAR sensitivity analysis.
+    'ppm_delta': 0.0,
+
     # Contrastive learning parameters
     'tau': 0.5,
     'alpha1': 0.55, #(z as anchor)

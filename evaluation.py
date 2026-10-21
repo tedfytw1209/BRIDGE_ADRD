@@ -9,7 +9,7 @@ from utils import compute_all_metrics
 
 
 # Plotting
-METHOD_COLORS = {'Model': '#2E86AB', 'Mean': '#A23B72', 'Median': '#6A4C93', 'KNN': '#F18F01', 'KNN1': '#F5A623', 'KNN3': '#F7C948', 'LinearRegression': '#C73E1D', 'GAIN': '#3BB273', 'GRAPE': '#2EC4B6'}
+METHOD_COLORS = {'Model': '#2E86AB', 'Mean': '#A23B72', 'Median': '#6A4C93', 'KNN': '#F18F01', 'KNN1': '#F5A623', 'KNN3': '#F7C948', 'LinearRegression': '#C73E1D', 'MICE': '#8C564B', 'MissForest': '#556B2F', 'PPM': '#E377C2', 'GAIN': '#3BB273', 'GRAPE': '#2EC4B6'}
 
 
 def plot_bars_by_feature(metric_table, feat_names, outfile, title):
