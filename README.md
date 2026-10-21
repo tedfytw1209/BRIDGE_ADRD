@@ -161,8 +161,8 @@ python train.py --output-dir results/my_run --random-state 42
 ## Running Experiments on SLURM
 
 All cluster experiments are submitted via scripts in the project root. Edit the
-`PARTITION`, `CPUS`, `MEM`, `TIME`, and `GRES` variables at the top of each
-script to match your cluster allocation before submitting.
+`CPUS`, `MEM`, `TIME`, and `GPUS` variables at the top of each script to match
+your cluster allocation before submitting.
 
 ### 1. Main Experiment — 5-Seed CI Results (Table 2 & 3, Figure 3)
 
@@ -245,7 +245,7 @@ sbatch run.sh
 ```
 
 > `run.sh` uses hardcoded `#SBATCH` directives — edit the file header directly
-> to change partition, memory, or time limits.
+> to change CPU, GPU, memory, or time limits.
 
 ---
 

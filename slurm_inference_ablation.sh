@@ -13,11 +13,10 @@
 #   MODEL_SOURCE=results_multi_seed  # where trained models live
 
 # ── cluster settings (edit these) ─────────────────────────────────────────────
-PARTITION="hpg-turin"
 CPUS=8
-MEM="32G"
+MEM="64G"
 TIME="6:00:00"
-GRES="gpu:1"            # set to "" if no GPU needed
+GPUS=1                  # GPUs per node; set to "" if no GPU needed
 CONDA_ENV="psn"
 WORK_DIR="$(cd "$(dirname "$0")" && pwd)"
 MODEL_SOURCE="${MODEL_SOURCE:-results_multi_seed}"
@@ -62,9 +61,9 @@ else
     SUBMIT_STAGES=("${STAGES[@]}")
 fi
 
-GRES_FLAG=""
-if [ -n "$GRES" ]; then
-    GRES_FLAG="--gres=$GRES"
+GPU_FLAG=""
+if [ -n "$GPUS" ]; then
+    GPU_FLAG="--gpus-per-node=$GPUS"
 fi
 
 echo "Submitting ${#SUBMIT_STAGES[@]} stage(s)  (model source: $MODEL_SOURCE)..."
@@ -77,13 +76,12 @@ for stage in "${SUBMIT_STAGES[@]}"; do
 
     sbatch \
         --job-name="$job_name" \
+        --nodes=1 \
+        --ntasks=1 \
         --cpus-per-task="$CPUS" \
         --mem="$MEM" \
         --time="$TIME" \
-        $GRES_FLAG \
-        --partition="$PARTITION" \
-        --account=ruogu.fang \
-        --qos=ruogu.fang \
+        $GPU_FLAG \
         --output="$log_file" \
         --error="$log_file" \
         --wrap="

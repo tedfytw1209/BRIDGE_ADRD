@@ -1,9 +1,10 @@
 #!/bin/bash
+#SBATCH -J psn_train
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
-#SBATCH --mem-per-cpu=12gb
-#SBATCH --gpus=1
+#SBATCH --gpus-per-node=1
+#SBATCH --mem=64G
 #SBATCH --time=48:00:00
 #SBATCH --output=%x.%j.out
 

@@ -15,20 +15,19 @@
 # Any arguments are passed straight through to run_multi_seed.py.
 
 # ── cluster settings (edit these) ─────────────────────────────────────────────
-PARTITION="hpg-turin"
-CPUS=16
-MEM="96G"
+CPUS=8
+MEM="64G"
 TIME="72:00:00"
-GRES="gpu:1"            # set to "" if no GPU needed
+GPUS=1                  # GPUs per node; set to "" if no GPU needed
 CONDA_ENV="psn"         # conda environment name
 WORK_DIR="$(cd "$(dirname "$0")" && pwd)"   # directory containing this script
 EXTRA_ARGS="$*"
 # ──────────────────────────────────────────────────────────────────────────────
 
-# Build optional GRES flag
-GRES_FLAG=""
-if [ -n "$GRES" ]; then
-    GRES_FLAG="--gres=$GRES"
+# Build optional GPU flag
+GPU_FLAG=""
+if [ -n "$GPUS" ]; then
+    GPU_FLAG="--gpus-per-node=$GPUS"
 fi
 
 mkdir -p "${WORK_DIR}/results_multi_seed"
@@ -38,13 +37,12 @@ log_file="${WORK_DIR}/results_multi_seed/slurm_%j.log"
 
 sbatch \
     --job-name="$job_name" \
+    --nodes=1 \
+    --ntasks=1 \
     --cpus-per-task="$CPUS" \
     --mem="$MEM" \
     --time="$TIME" \
-    $GRES_FLAG \
-    --partition="$PARTITION" \
-    --account=ruogu.fang \
-    --qos=ruogu.fang \
+    $GPU_FLAG \
     --output="$log_file" \
     --error="$log_file" \
     --wrap="

@@ -8,11 +8,10 @@
 #   bash slurm_ablation.sh 3            # submit one stage by 1-based index
 
 # ── cluster settings (edit these) ─────────────────────────────────────────────
-PARTITION="hpg-turin"
-CPUS=16
-MEM="96G"
+CPUS=8
+MEM="64G"
 TIME="24:00:00"
-GRES="gpu:1"            # set to "" if no GPU needed
+GPUS=1                  # GPUs per node; set to "" if no GPU needed
 CONDA_ENV="psn"         # conda environment name (or comment out the activation)
 WORK_DIR="$(cd "$(dirname "$0")" && pwd)"   # directory containing this script
 # ──────────────────────────────────────────────────────────────────────────────
@@ -57,10 +56,10 @@ else
     SUBMIT_STAGES=("${STAGES[@]}")
 fi
 
-# Build optional GRES flag
-GRES_FLAG=""
-if [ -n "$GRES" ]; then
-    GRES_FLAG="--gres=$GRES"
+# Build optional GPU flag
+GPU_FLAG=""
+if [ -n "$GPUS" ]; then
+    GPU_FLAG="--gpus-per-node=$GPUS"
 fi
 
 echo "Submitting ${#SUBMIT_STAGES[@]} stage(s)..."
@@ -74,13 +73,12 @@ for stage in "${SUBMIT_STAGES[@]}"; do
 
     sbatch \
         --job-name="$job_name" \
+        --nodes=1 \
+        --ntasks=1 \
         --cpus-per-task="$CPUS" \
         --mem="$MEM" \
         --time="$TIME" \
-        $GRES_FLAG \
-        --partition="$PARTITION" \
-        --account=ruogu.fang \
-        --qos=ruogu.fang \
+        $GPU_FLAG \
         --output="$log_file" \
         --error="$log_file" \
         --wrap="
