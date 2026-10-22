@@ -21,7 +21,7 @@ TIME="72:00:00"
 GPUS=1                  # GPUs per node; set to "" if no GPU needed
 CONDA_ENV="psn"         # conda environment name
 ACCOUNT="${ACCOUNT:-r01682}"   # IU RT project, passed as -A
-PARTITION="${PARTITION:-}"   # optional; set to "" to use the cluster default
+PARTITION="${PARTITION:-gpu}"   # GPU jobs must go to the gpu partition
 WORK_DIR="$(cd "$(dirname "$0")" && pwd)"   # directory containing this script
 EXTRA_ARGS="$*"
 # ──────────────────────────────────────────────────────────────────────────────
