@@ -17,7 +17,7 @@
 # ── cluster settings (edit these) ─────────────────────────────────────────────
 CPUS=8
 MEM="64G"
-TIME="72:00:00"
+TIME="48:00:00"         # must fit the QOS wall-time limit
 GPUS=1                  # GPUs per node; set to "" if no GPU needed
 CONDA_ENV="psn"         # conda environment name
 ACCOUNT="${ACCOUNT:-r01682}"   # IU RT project, passed as -A
