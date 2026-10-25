@@ -18,3 +18,4 @@ Patient Similarity Network.docx
 /__MACOSX
 .DS_Store
 /results_multi_seed
+/results_ablation_agg
